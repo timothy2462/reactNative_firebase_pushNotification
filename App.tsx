@@ -1,130 +1,138 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
+  Button,
+  Alert,
 } from 'react-native';
+import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import NotificationService from './services/NotificationService';
+const App: React.FC = () => {
+  const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  useEffect(() => {
+    // Request permission on component mount
+    const setupNotifications = async () => {
+      // Set up background handler
+      NotificationService.setupBackgroundHandler();
+      
+      // Request permission
+      const hasPermission = await NotificationService.requestUserPermission();
+      setPermissionStatus(hasPermission);
+      
+      if (hasPermission) {
+        // Get FCM token
+        const token = await NotificationService.getFCMToken();
+        setFcmToken(token);
+        
+        // Setup foreground handler
+        const unsubscribe = NotificationService.setupForegroundHandler();
+        
+        // Setup notification opened handler (when app is closed or in background)
+        messaging().onNotificationOpenedApp((remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+          console.log('Notification opened app:', remoteMessage);
+          // Navigate to a specific screen based on the notification if needed
+        });
+        
+        // Check if app was opened from a notification (when app was completely closed)
+        messaging()
+          .getInitialNotification()
+          .then((remoteMessage: FirebaseMessagingTypes.RemoteMessage | null) => {
+            if (remoteMessage) {
+              console.log('Initial notification:', remoteMessage);
+              // Navigate to a specific screen based on the notification if needed
+            }
+          });
+          
+        return () => unsubscribe();
+      }
+    };
+    
+    setupNotifications();
+  }, []);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const requestPermission = async (): Promise<void> => {
+    const hasPermission = await NotificationService.requestUserPermission();
+    setPermissionStatus(hasPermission);
+    
+    if (hasPermission) {
+      const token = await NotificationService.getFCMToken();
+      setFcmToken(token);
+      Alert.alert('Success', 'Push notification permission granted!');
+    } else {
+      Alert.alert('Error', 'Failed to get push notification permission');
+    }
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
-
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
+        <View style={styles.body}>
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Firebase Push Notifications Demo</Text>
+            <Text style={styles.sectionDescription}>
+              Status: {permissionStatus === null ? 'Not requested' : permissionStatus ? 'Granted' : 'Denied'}
+            </Text>
+            
+            {fcmToken && (
+              <Text style={styles.tokenText} numberOfLines={1} ellipsizeMode="middle">
+                Token: {fcmToken}
+              </Text>
+            )}
+            
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Request Notification Permission"
+                onPress={requestPermission}
+              />
+            </View>
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    backgroundColor: '#F3F3F3',
+  },
+  body: {
+    backgroundColor: '#FFFFFF',
+  },
   sectionContainer: {
     marginTop: 32,
     paddingHorizontal: 24,
+    paddingBottom: 24,
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: '600',
+    color: '#000000',
+    marginBottom: 16,
   },
   sectionDescription: {
-    marginTop: 8,
     fontSize: 18,
     fontWeight: '400',
+    color: '#444444',
+    marginVertical: 8,
   },
-  highlight: {
-    fontWeight: '700',
+  tokenText: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    marginTop: 16,
   },
 });
 
