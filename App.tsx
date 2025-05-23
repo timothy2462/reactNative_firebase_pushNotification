@@ -211,7 +211,7 @@ const App: React.FC = () => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Built with Firebase Cloud Messaging
+              Built by Timothy with Firebase Cloud Messaging
             </Text>
             <View style={styles.footerDots}>
               <View style={styles.dot} />
