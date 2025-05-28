@@ -22,7 +22,6 @@ const App: React.FC = () => {
   const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
@@ -76,7 +75,6 @@ const App: React.FC = () => {
 
   const copyTokenToClipboard = () => {
     if (fcmToken) {
-      // In a real app, you'd use @react-native-clipboard/clipboard
       Alert.alert('FCM Token', fcmToken, [
         { text: 'OK', style: 'default' }
       ]);

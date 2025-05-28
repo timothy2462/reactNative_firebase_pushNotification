@@ -1,5 +1,4 @@
 import messaging from '@react-native-firebase/messaging';
-// import PushNotification from 'react-native-push-notification';
 import PushNotification from 'react-native-push-notification';
 import { Platform } from 'react-native';
 
@@ -22,34 +21,22 @@ class NotificationService {
       (created) => console.log(`Channel created: ${created}`)
     );
 
-    // Configure push notification
     PushNotification.configure({
-      // (required) Called when a remote or local notification is opened or received
       onNotification: function (notification) {
         console.log('NOTIFICATION:', notification);
-        
-        // Process the notification here
-        
-        // Required on iOS only
         if (Platform.OS === 'ios') {
           notification.finish('backgroundFetchResultNoData');
         }
       },
-
-      // (optional) Called when Token is generated
       onRegister: function (token) {
         console.log('TOKEN:', token);
       },
-
-      // Should the initial notification be popped automatically
       popInitialNotification: true,
 
-      // Request permissions on iOS (necessary for iOS)
       requestPermissions: Platform.OS === 'ios',
     });
   };
 
-  // Request permissions
   requestUserPermission = async () => {
     let permissionStatus;
     
@@ -69,7 +56,6 @@ class NotificationService {
 
       return enabled;
     } else {
-      // Android doesn't need explicit permission for FCM, but we should check
       try {
         permissionStatus = await messaging().hasPermission();
         if (permissionStatus === messaging.AuthorizationStatus.NOT_DETERMINED) {
@@ -125,12 +111,10 @@ class NotificationService {
     return unsubscribe;
   };
 
-  // Setup background handler
   setupBackgroundHandler = () => {
     // Register background handler
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       console.log('Background message:', remoteMessage);
-      // Handle the message here when app is in background
     });
   };
 }
